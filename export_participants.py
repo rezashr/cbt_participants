@@ -5,7 +5,6 @@ from gspread_dataframe import get_as_dataframe, set_with_dataframe
 from pychchpd import pychchpd
 from datetime import datetime
 from dateutil import relativedelta
-from gspread_formatting import *
 import numpy as np
 from defaults import *
 
@@ -126,6 +125,14 @@ def run():
                     if i < 3:
                         collect_after = visit_date - relativedelta.relativedelta(months=ACCEPTABLE_GAP_months[0])
                         collect_before = visit_date + relativedelta.relativedelta(months=ACCEPTABLE_GAP_months[1])
+
+                    # This would be the end of study.
+                    else:
+                        collect_after = visit_date - relativedelta.relativedelta(
+                            months=ACCEPTABLE_GAP_months_end_of_study[0])
+
+                        collect_before = visit_date + relativedelta.relativedelta(
+                            months=ACCEPTABLE_GAP_months_end_of_study[1])
 
                     if previous_visit:
                         collect_after = max(collect_after, previous_visit + relativedelta.relativedelta(
