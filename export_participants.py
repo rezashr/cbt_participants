@@ -179,7 +179,8 @@ def run():
 
     else:
         try:
-            eligible_ss.del_worksheet('Participants to check')
+            check_ws = eligible_ss.worksheet('Participants to check')
+            eligible_ss.del_worksheet(check_ws)
         except Exception:
             pass
 
