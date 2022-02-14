@@ -72,8 +72,10 @@ class ComputerizedTestsParticipants:
             self._participants = (self.chchpd.import_participants(identifiers=True).
                                   select_columns('first_name', 'last_name', 'subject_id', 'dead').
                                   assign(Fullname=lambda x: x['first_name'] + " " + x['last_name']).
-                                  drop(columns=['first_name', 'last_name']))
+                                  drop(columns=['first_name', 'last_name']).
+                                  rename(columns={'dead': 'deceased'}))
 
+            self._participants['deceased'] = self._participants.apply(lambda x: 'Yes' if x.deceased else 'No', axis=1)
         return self._participants.copy()
 
     @property
@@ -132,7 +134,7 @@ class ComputerizedTestsParticipants:
                     data.iloc[row_idx, data.columns.get_loc(EEG_date_column)] = eeg_row[EEG_date_column].iloc[min_idx]
 
             data = data[
-                ['Fullname', 'subject_id', 'session_date', MRI_date_column, EEG_date_column, 'diagnosis', 'dead']]
+                ['Fullname', 'subject_id', 'session_date', MRI_date_column, EEG_date_column, 'diagnosis', 'deceased']]
 
             data = data.sort_values(MRI_date_column)
             self._latest_data = data
@@ -180,7 +182,7 @@ class ComputerizedTestsParticipants:
         current_eligible_participants = self.current_eligible_participants()
         latest_eligible_data = self.latest_data
 
-        for col_name in ['Fullname', EEG_date_column, 'session_date', 'diagnosis', 'dead']:
+        for col_name in ['Fullname', EEG_date_column, 'session_date', 'diagnosis', 'deceased']:
             if col_name in current_eligible_participants.columns:
                 current_eligible_participants = current_eligible_participants.drop(columns=[col_name])
 
@@ -252,11 +254,11 @@ class ComputerizedTestsParticipants:
 
             date_collected = row[session_name]
             flagged = 'No'
-            deceased = row['dead']
+            deceased = row['deceased']
             if pd.isna(date_collected):
                 if interval_end.date() < today:
                     status = 'Missed'
-                elif deceased:
+                elif deceased == 'Yes':
                     status = 'Deceased'
                 else:
                     if interval_end.date() <= (today + relativedelta.relativedelta(days=7)):
