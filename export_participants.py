@@ -70,10 +70,10 @@ class ComputerizedTestsParticipants:
         if self._participants is None:
             # Retrieve participant names.
             self._participants = (self.chchpd.import_participants(identifiers=True).
-                                  select_columns('first_name', 'last_name', 'subject_id', 'dead').
-                                  assign(Fullname=lambda x: x['first_name'] + " " + x['last_name']).
-                                  drop(columns=['first_name', 'last_name']).
-                                  rename(columns={'dead': 'deceased'}))
+                                 select_columns('first_name', 'last_name', 'subject_id', 'dead', 'birth_date').
+                                 assign(Fullname=lambda x: x['first_name'] + " " + x['last_name']).
+                                 drop(columns=['first_name', 'last_name']).
+                                 rename(columns={'dead': 'deceased'}))
 
             self._participants['deceased'] = self._participants.apply(lambda x: 'Yes' if x.deceased else 'No', axis=1)
         return self._participants.copy()
@@ -134,7 +134,7 @@ class ComputerizedTestsParticipants:
                     data.iloc[row_idx, data.columns.get_loc(EEG_date_column)] = eeg_row[EEG_date_column].iloc[min_idx]
 
             data = data[
-                ['Fullname', 'subject_id', 'session_date', MRI_date_column, EEG_date_column, 'diagnosis', 'deceased']]
+                ['Fullname', 'subject_id', 'session_date', MRI_date_column, EEG_date_column, 'diagnosis', 'deceased', 'birth_date']]
 
             data = data.sort_values(MRI_date_column)
             self._latest_data = data
@@ -214,9 +214,13 @@ class ComputerizedTestsParticipants:
                 cols += [col]
 
         eligible_participants = eligible_participants[cols]
+        if 'birth_date' in eligible_participants.columns:
+            eligible_participants_to_save = eligible_participants.drop(columns=['birth_date'])
+        else:
+            eligible_participants_to_save = eligible_participants
 
         eligible_ws = self.gc.open(CBT_ELIGIBLE_PARTICIPANTS_SPREADSHEET).worksheet(ELIGIBLE_WORKSHEET)
-        set_with_dataframe(worksheet=eligible_ws, dataframe=df_to_strdate(eligible_participants),
+        set_with_dataframe(worksheet=eligible_ws, dataframe=df_to_strdate(eligible_participants_to_save),
                            include_index=False, include_column_header=True, allow_formulas=True,
                            resize=True)
 
@@ -224,6 +228,7 @@ class ComputerizedTestsParticipants:
 
     def _compute_interval_individual(self, row, date_column, modality=None):
         date = pd.to_datetime(row[date_column])
+        birth_date = pd.to_datetime(row['birth_date'])
         today = datetime.today().date()
         if pd.isna(date):
             return None
@@ -233,6 +238,7 @@ class ComputerizedTestsParticipants:
                          'modality'      : [],
                          'status'        : [],
                          'date_collected': [],
+                         'age_at_start': [],
                          'interval_start': [],
                          'interval_end'  : [],
                          'needs_checking': []}
@@ -287,6 +293,7 @@ class ComputerizedTestsParticipants:
             interval_dict['interval_end'].append(interval_end.date())
             interval_dict['modality'].append(modality)
             interval_dict['needs_checking'].append(flagged)
+            interval_dict['age_at_start'].append( np.round(np.timedelta64(interval_start.date() - birth_date.date(), 'D').astype('float')/365.25, 1) )
 
         return pd.DataFrame(interval_dict)
 
@@ -299,7 +306,7 @@ class ComputerizedTestsParticipants:
             EEG_date_column]
         intervals[MRI_date_column] = row[MRI_date_column].date()
 
-        cols = ['subject_id', 'session_date', 'diagnosis', MRI_date_column, EEG_date_column]
+        cols = ['subject_id', 'session_date', 'diagnosis', 'age_at_start', MRI_date_column, EEG_date_column]
         for col in intervals.columns.to_list():
             if col not in cols:
                 cols.append(col)
