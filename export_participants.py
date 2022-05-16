@@ -319,10 +319,11 @@ class ComputerizedTestsParticipants:
         if eligible_participants is None:
             eligible_participants = self.update_eligible_participants_list()
 
-        summary_list = pd.DataFrame()
+        summary_list = []
         for row_idx, row in eligible_participants.iterrows():
-            summary_list = summary_list.append(self._compute_interval(row), ignore_index=True)
+            summary_list.append(self._compute_interval(row))
 
+        summary_list = pd.concat(summary_list, ignore_index=True)
         return summary_list
 
     def run(self):
