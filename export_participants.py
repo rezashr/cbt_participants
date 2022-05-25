@@ -245,7 +245,7 @@ class ComputerizedTestsParticipants:
                          'modality'      : [],
                          'status'        : [],
                          'date_collected': [],
-                         'age_at_start': [],
+                         'age_at_start'  : [],
                          'interval_start': [],
                          'interval_end'  : [],
                          'needs_checking': []}
@@ -334,12 +334,55 @@ class ComputerizedTestsParticipants:
         summary_list = pd.concat(summary_list, ignore_index=True)
         return summary_list
 
+    def update_participants_to_book(self, intervals, ss_title, ws_title='Participants to book'):
+        today = datetime.today().date()
+        can_be_collected = intervals[intervals.date_collected.isna()]
+        can_be_collected = can_be_collected.sort_values(by='interval_end')
+        upcoming_time = relativedelta.relativedelta(weeks=4)
+        critical_time = relativedelta.relativedelta(weeks=6)
+        missed_time = relativedelta.relativedelta(weeks=4)
+
+        to_book = []
+        to_book_format = []
+        format_starting_row = 0
+        for format, (start_intervals, end_intervals) in to_book_template:
+            rows = np.ones(can_be_collected.shape[0], dtype=bool)
+            if start_intervals:
+                start_lt, start_gt =  start_intervals
+                if isinstance(start_gt, relativedelta.relativedelta):
+                    rows = np.logical_and(rows, can_be_collected.interval_start + start_gt >= today)
+                    
+                if isinstance(start_lt, relativedelta.relativedelta):
+                    rows = np.logical_and(rows, can_be_collected.interval_start + start_lt <= today)
+                    
+            if end_intervals:
+                end_lt, end_gt =  end_intervals
+                if isinstance(end_gt, relativedelta.relativedelta):
+                    rows = np.logical_and(rows, can_be_collected.interval_end + end_gt >= today)
+                
+                if isinstance(end_lt, relativedelta.relativedelta):
+                    rows = np.logical_and(rows, can_be_collected.interval_end + end_lt <= today)
+                    
+            to_book.append(can_be_collected[rows])
+            N_rows = np.sum(rows)
+            to_book_format.append((format, np.arange(N_rows) + format_starting_row))
+            format_starting_row += N_rows
+
+        to_book = pd.concat(to_book, ignore_index=True)
+        ws = self._add_delete_worksheet(to_book, ws_title=ws_title, ss_title=ss_title)
+        for format, rows in to_book_format:
+            apply_formatting(worksheet=ws, fmt=format, rows=rows)
+
     def run(self):
         eligible_participants = self.update_eligible_participants_list()
         intervals = self.compute_intervals(eligible_participants)
         MRI_intervals = intervals.query('modality=="MRI"').reset_index(drop=True).drop(columns=['modality'])
         self._add_delete_worksheet(data=MRI_intervals, ss_title=CBT_ELIGIBLE_PARTICIPANTS_SPREADSHEET,
                                    ws_title='Intervals based on MRI')
+
+        self.update_participants_to_book(MRI_intervals,
+                                         ss_title=CBT_ELIGIBLE_PARTICIPANTS_SPREADSHEET,
+                                         ws_title='Participants to book')
 
 
 # def run():
