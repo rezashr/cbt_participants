@@ -159,12 +159,16 @@ class ComputerizedTestsParticipants:
             ss_title = CBT_ELIGIBLE_PARTICIPANTS_SPREADSHEET
 
         ss = self.gc.open(ss_title)
-
+        ws = None
+        
         # Add a worksheet for duplicate records.
         if not data.empty:
             try:
+                # Based on https://stackoverflow.com/questions/60015321/how-to-reset-all-rows-and-column-data-uisng-python-gspread-sheets
+                # to remove all data and formatting.
                 ws = ss.worksheet(ws_title)
-                ws.clear()
+                requests = {"requests": [{"updateCells": {"range": {"sheetId": ws._properties['sheetId']}, "fields": "*"}}]}
+                ss.batch_update(requests)
             except gspread.WorksheetNotFound:
                 ws = ss.add_worksheet(ws_title, rows=0, cols=0)
 
@@ -178,6 +182,8 @@ class ComputerizedTestsParticipants:
                 ss.del_worksheet(ws)
             except Exception:
                 pass
+            
+        return ws
 
     def update_eligible_participants_list(self):
         current_eligible_participants = self.current_eligible_participants()
