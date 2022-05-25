@@ -70,10 +70,10 @@ class ComputerizedTestsParticipants:
         if self._participants is None:
             # Retrieve participant names.
             self._participants = (self.chchpd.import_participants(identifiers=True).
-                                 select_columns('first_name', 'last_name', 'subject_id', 'dead', 'birth_date').
-                                 assign(Fullname=lambda x: x['first_name'] + " " + x['last_name']).
-                                 drop(columns=['first_name', 'last_name']).
-                                 rename(columns={'dead': 'deceased'}))
+                                  select_columns('first_name', 'last_name', 'subject_id', 'dead', 'birth_date').
+                                  assign(Fullname=lambda x: x['first_name'] + " " + x['last_name']).
+                                  drop(columns=['first_name', 'last_name']).
+                                  rename(columns={'dead': 'deceased'}))
 
             self._participants['deceased'] = self._participants.apply(lambda x: 'Yes' if x.deceased else 'No', axis=1)
         return self._participants.copy()
@@ -134,7 +134,8 @@ class ComputerizedTestsParticipants:
                     data.iloc[row_idx, data.columns.get_loc(EEG_date_column)] = eeg_row[EEG_date_column].iloc[min_idx]
 
             data = data[
-                ['Fullname', 'subject_id', 'session_date', MRI_date_column, EEG_date_column, 'diagnosis', 'deceased', 'birth_date']]
+                ['Fullname', 'subject_id', 'session_date', MRI_date_column, EEG_date_column, 'diagnosis', 'deceased',
+                 'birth_date']]
 
             data = data.sort_values(MRI_date_column)
             self._latest_data = data
@@ -293,7 +294,8 @@ class ComputerizedTestsParticipants:
             interval_dict['interval_end'].append(interval_end.date())
             interval_dict['modality'].append(modality)
             interval_dict['needs_checking'].append(flagged)
-            interval_dict['age_at_start'].append( np.round(np.timedelta64(interval_start.date() - birth_date.date(), 'D').astype('float')/365.25, 1) )
+            interval_dict['age_at_start'].append(
+                np.round(np.timedelta64(interval_start.date() - birth_date.date(), 'D').astype('float') / 365.25, 1))
 
         return pd.DataFrame(interval_dict)
 
