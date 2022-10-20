@@ -8,8 +8,8 @@ min_gap_between_sessions = 9
 N_DAYS_BEFORE_TO_REPORT = 14
 
 # Column names in the spreadsheet.
-date_col_names_per_year = ('Baseline', 'Yr 1', 'Yr 2', 'Yr 3')
-acceptable_intervals_months = ((-1, 6), (11, 18), (23, 30), (35, 48))
+date_col_names_per_year = ('Baseline', 'Yr 1.5', 'Yr 3', 'Yr 4.5')
+acceptable_intervals_months = ((0, 6), (12, 24), (25, 47), (48, 60))
 
 # Some formatting things. Apparently people like pretty things!!!
 grace_period_format = cellFormat(backgroundColor=color(0.557, 0.486, 0.765))
